@@ -50,41 +50,50 @@ bool Request::get(const char * url, std::map<std::string, std::string> *query){
 	char payload[]="";
 	bool res;
 
-	if (query != NULL){
-			strcpy(path,  url);
-			int length=strlen(path);
-			path[length++] = '?';
+	createURL(path, REQUEST_MAX_PATH,  url, query);
 
-			std::map<std::string, std::string>::iterator it = query->begin();
-			while (it != query->end()){
-				int newLen = length + it->first.length() + it->second.length() + 2;
-				if (newLen > REQUEST_MAX_PATH){
-	#ifdef REQUEST_DEBUG
-					printf("HTTP Request path exceeded building query\n");
-	#endif
-					return false;
-				}
-				strcpy(&path[length],  it->first.c_str());
-				length +=  it->first.length();
-				path[length++] = '=';
-				length += urlEncode(&path[length],  it->second.c_str());
 
-				it++;
-				if ( it != query->end()){
-					path[length++] = '&';
-				} else {
-					path[length++] = 0;
-				}
-			}
-
-			res = doRequest("GET", path, payload, 0);
-			return res;
-		}
-
-	res = doRequest("GET", url, payload, 0);
+	res = doRequest("GET", path, payload, 0);
 	return res;
 
 }
+
+bool Request::createURL(
+		char * target,
+		size_t len,
+		const char * url,
+		std::map<std::string, std::string> *query){
+
+	strcpy(target,  url);
+	if (query != NULL){
+		int length=strlen(target);
+		target[length++] = '?';
+
+		std::map<std::string, std::string>::iterator it = query->begin();
+		while (it != query->end()){
+			int newLen = length + it->first.length() + it->second.length() + 2;
+			if (newLen > len){
+#ifdef REQUEST_DEBUG
+				printf("HTTP Request path exceeded building query\n");
+#endif
+				return false;
+			}
+			strcpy(&target[length],  it->first.c_str());
+			length +=  it->first.length();
+			target[length++] = '=';
+			length += urlEncode(&target[length],  it->second.c_str());
+
+			it++;
+			if ( it != query->end()){
+				target[length++] = '&';
+			} else {
+				target[length++] = 0;
+			}
+		}
+	}
+	return true;
+}
+
 
 
 bool Request::doRequest(const char * method, const char * url, const char * payload, uint payloadLen){
@@ -241,19 +250,24 @@ bool Request::doRequest(const char * method, const char * url, const char * payl
 
 
 
-bool Request::post(const char * url,  std::map<std::string, std::string> *query){
+bool Request::post(
+		const char * url,
+		std::map<std::string, std::string> *param,
+		std::map<std::string, std::string> *query){
 	char payload[REQUEST_MAX_PATH] = "";
 	int length=0;
 	bool res;
+	char path[REQUEST_MAX_PATH];
 
+	createURL(path, REQUEST_MAX_PATH,  url, query);
 
-	if (query != NULL){
+	if (param != NULL){
 
 			size_t remLen = REQUEST_MAX_PATH;
 		   char* s = json_objOpen( payload,  NULL,  &remLen );
 
-			std::map<std::string, std::string>::iterator it = query->begin();
-			while (it != query->end()){
+			std::map<std::string, std::string>::iterator it = param->begin();
+			while (it != param->end()){
 
 				s = json_str( s,  it->first.c_str(), it->second.c_str(), &remLen );
 
@@ -268,7 +282,7 @@ bool Request::post(const char * url,  std::map<std::string, std::string> *query)
 			length = strlen(payload);
 	}
 
-	res = doRequest("POST", url, payload, length);
+	res = doRequest("POST", path, payload, length);
 	return res;
 }
 
@@ -301,8 +315,10 @@ int Request::getHeaderLen(){
 }
 
 
-const char * Request::getPayload(){
-	return (const char *)xResponse.pBody;
+//const char * Request::getPayload(){
+//	return (const char *)xResponse.pBody;
+char * Request::getPayload(){
+	return (char *)xResponse.pBody;
 }
 
 int  Request::getPayloadLen(){

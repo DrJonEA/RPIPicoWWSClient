@@ -71,10 +71,13 @@ public:
 	/***
 	 * Undertake an HTTP Post
 	 * @param url - URL to connect to
-	 * @param query - Query to send as name/value pairs
+	 * @param param - Param to send as name/value pairs
+	 * @param query - Query to into URL
 	 * @return true if successful
 	 */
-	bool post(const char * url,  std::map<std::string, std::string> *query = NULL);
+	bool post(const char * url,
+			std::map<std::string, std::string> *param = NULL,
+			std::map<std::string, std::string> *query = NULL);
 
 	/***
 	 * Undertake an HTTP Post
@@ -108,7 +111,8 @@ public:
 	 * Use getPayloadLen to identify length
 	 * @return
 	 */
-	const char * getPayload();
+	//const char * getPayload();
+	char * getPayload();
 
 	/***
 	 * Returns the length of the payload returned from the request
@@ -131,6 +135,16 @@ public:
 	void setForceTLS12(bool state);
 
 protected:
+	/***
+	 * Create a URL from compoennts
+	 * @param target - string to write to
+	 * @param len - Maximum length of target
+	 * @param url - base URL
+	 * @param query - key value pairs to add to the URL
+	 */
+	bool createURL(char * target,  size_t len, const char * url, std::map<std::string, std::string> *query);
+
+
 	/***
 	 * Issue an HTTP Request
 	 * @param method - Request type GET or POST
