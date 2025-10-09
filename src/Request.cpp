@@ -47,7 +47,7 @@ void Request::setObserver(RequestObserver *obs){
 
 bool Request::get(const char * url, std::map<std::string, std::string> *query){
 	char path[REQUEST_MAX_PATH];
-	char payload[]="";
+	const char payload[]="";
 	bool res;
 
 	createURL(path, REQUEST_MAX_PATH,  url, query);
@@ -63,6 +63,10 @@ bool Request::createURL(
 		size_t len,
 		const char * url,
 		std::map<std::string, std::string> *query){
+
+
+	if (strlen(url) >= len)
+		return false;
 
 	strcpy(target,  url);
 	if (query != NULL){
@@ -90,6 +94,12 @@ bool Request::createURL(
 				target[length++] = 0;
 			}
 		}
+	}
+
+	int l = strlen(target);
+	if (l >= REQUEST_MAX_PATH){
+		printf("URL is too long (%d): %s\n", l, target);
+		return false;
 	}
 	return true;
 }

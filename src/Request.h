@@ -24,7 +24,7 @@
 #endif
 
 #ifndef REQUEST_MAX_PATH
-#define REQUEST_MAX_PATH 256
+#define REQUEST_MAX_PATH 512
 #endif
 
 #define REQUEST_BUF_OVERFLOW -200
