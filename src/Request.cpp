@@ -149,8 +149,8 @@ bool Request::doRequest(const char * method, const char * url, const char * payl
 
 	xNetworkContext.pTransport = pTrans;
 	xTransportInterface.pNetworkContext = &xNetworkContext;
-	xTransportInterface.send = Transport::staticTransSend;
-	xTransportInterface.recv = Transport::staticTransRead;
+	xTransportInterface.send = WSTransport::staticTransSend;
+	xTransportInterface.recv = WSTransport::staticTransRead;
 
 	  /* Initialize all HTTP Client library API structs to 0. */
 	( void ) memset( &xRequestInfo, 0, sizeof( xRequestInfo ) );
@@ -198,7 +198,7 @@ bool Request::doRequest(const char * method, const char * url, const char * payl
 			 * request headers is reused here. */
 			xResponse.pBuffer = (unsigned char *)pBuffer;
 			xResponse.bufferLen = xBufferLen;
-			xResponse.getTime = Transport::getTime;
+			xResponse.getTime = WSTransport::getTime;
 
 #ifdef REQUEST_DEBUG
 			if (payloadLen != 0){

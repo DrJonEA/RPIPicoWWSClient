@@ -10,9 +10,9 @@ add_library(picow_wsclient STATIC)
 target_sources(picow_wsclient PUBLIC
 	${PICOW_WSCLIENT_PATH}/src/Request.cpp
 	${PICOW_WSCLIENT_PATH}/src/RequestObserver.cpp
-	${PICOW_WSCLIENT_PATH}/src/TCPTransport.cpp
-	${PICOW_WSCLIENT_PATH}/src/TLSTransBlock.cpp
-	${PICOW_WSCLIENT_PATH}/src/Transport.cpp
+	${PICOW_WSCLIENT_PATH}/src/WSTCPTransport.cpp
+	${PICOW_WSCLIENT_PATH}/src/WSTLSTransBlock.cpp
+	${PICOW_WSCLIENT_PATH}/src/WSTransport.cpp
 	${PICOW_WSCLIENT_PATH}/src/WifiHelper.cpp
 )
 

@@ -14,8 +14,8 @@
 #include <cstring>
 #include <uri.hh>
 #include "core_http_client.h"
-#include "TCPTransport.h"
-#include "TLSTransBlock.h"
+#include "WSTCPTransport.h"
+#include "WSTLSTransBlock.h"
 #include "JSONSerialisable.h"
 
 
@@ -179,9 +179,9 @@ protected:
 	HTTPRequestHeaders_t xRequestHeaders;
 	HTTPStatus_t xHTTPStatus = HTTPSuccess;
 
-	TCPTransport xSockTrans;
-	TLSTransBlock xTLSTrans;
-	Transport *pTrans;
+	WSTCPTransport xSockTrans;
+	WSTLSTransBlock xTLSTrans;
+	WSTransport *pTrans;
 	bool xTLS12 = false;
 
 };
