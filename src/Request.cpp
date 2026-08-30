@@ -312,6 +312,16 @@ bool Request::postJSON(const char * url,  JSONSerialisable *json){
 	return res;
 }
 
+bool Request::postPayload(const char * url,  const char *payload){
+	int length=0;
+	bool res;
+
+	length = strlen(payload);
+
+	res = doRequest("POST", url, payload, length);
+	return res;
+}
+
 int Request::getStatusCode(){
 	return xResponse.statusCode;
 }

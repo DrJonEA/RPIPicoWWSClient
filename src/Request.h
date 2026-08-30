@@ -87,6 +87,14 @@ public:
 	 */
 	bool postJSON(const char * url,  JSONSerialisable *json);
 
+	/***
+	 * Undertake an HTTP Post
+	 * @param url
+	 * @param payload
+	 * @return true if successful
+	 */
+	bool postPayload(const char * url,  const char *payload);
+
 	/**
 	 * Get the HTTP result code
 	 * @return 200 for sucess
