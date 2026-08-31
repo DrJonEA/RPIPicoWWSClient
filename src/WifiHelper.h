@@ -30,6 +30,13 @@ public:
 	static bool init();
 
 	/***
+	 * Deinitialise the controller
+	 *
+	 * @return true if successful
+	 */
+	static bool deinit();
+
+	/***
 	 * Get IP address of unit
 	 * @param ip - output uint8_t[4]
 	 * @return - true if IP addres assigned

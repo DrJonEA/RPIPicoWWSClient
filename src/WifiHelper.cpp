@@ -44,6 +44,23 @@ bool WifiHelper::init(){
 
 }
 
+bool WifiHelper::deinit(){
+	// 1. Disconnect from the AP (if currently associated)
+	cyw43_arch_lwip_begin();
+	cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
+	cyw43_arch_lwip_end();
+
+	// 2. Drop STA mode (and AP mode if you used it)
+	cyw43_arch_disable_sta_mode();
+	// cyw43_arch_disable_ap_mode();  // if applicable
+
+	// 3. Fully tear down the driver and power off the radio
+	//Not fully disabling as this is unstable in the SDK
+	//cyw43_arch_deinit();
+	return true;
+}
+
+
 bool WifiHelper::join(const char *sid, const char *password,  uint8_t retries){
 	cyw43_arch_enable_sta_mode();
 	printf("Connecting to WiFi... %s \n", sid);
