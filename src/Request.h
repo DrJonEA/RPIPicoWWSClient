@@ -142,6 +142,31 @@ public:
 	 */
 	void setForceTLS12(bool state);
 
+	/***
+	 * Root CA certificate(s), PEM format, used to verify HTTPS servers.
+	 * The string must stay in memory while the Request is used.
+	 * HTTPS requests are refused until a root CA is set (or setInsecure(true)).
+	 * @param pem - root CA certificate(s)
+	 */
+	void setRootCA(const char *pem);
+
+	/***
+	 * Allow HTTPS without checking the server's certificate.
+	 * Encrypted, but the server could be anyone. For quick demos only.
+	 * @param state - true to allow unverified HTTPS
+	 */
+	void setInsecure(bool state);
+
+	/***
+	 * TLS version used by the last HTTPS request, e.g. "TLSv1.3"
+	 */
+	const char * getTLSVersion();
+
+	/***
+	 * Cipher suite used by the last HTTPS request
+	 */
+	const char * getTLSCipher();
+
 protected:
 	/***
 	 * Create a URL from compoennts
@@ -191,6 +216,8 @@ protected:
 	WSTLSTransBlock xTLSTrans;
 	WSTransport *pTrans;
 	bool xTLS12 = false;
+	const char *pRootCA = NULL;
+	bool xInsecure = false;
 
 };
 

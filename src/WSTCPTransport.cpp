@@ -1,6 +1,7 @@
 /* WSTCPTransport.cpp */
 
 #include "WSTCPTransport.h"
+#include "lwip/api.h"
 
 #include <stdlib.h>
 #include "pico/stdlib.h"
@@ -49,20 +50,22 @@ int32_t WSTCPTransport::transRead(void * pBuffer, size_t bytesToRecv){
 
 
 bool WSTCPTransport::transConnect(const char * host, uint16_t port){
-    err_t res = dns_gethostbyname(host, &xHost, WSTCPTransport::dnsCB, this);
-    strcpy(xHostName, host);
+    strncpy(xHostName, host, sizeof(xHostName) - 1);
+    xHostName[sizeof(xHostName) - 1] = 0;
     xPort = port;
 
-    if (res == ERR_OK){
-    } else {
-        uint32_t now = to_ms_since_boot (get_absolute_time ());
-        if (xSemaphoreTake(xHostDNSFound, TCP_TRANSPORT_WAIT) != pdTRUE){
-            printf("DNS Timeout on Connect: %s, %d After %u ms",
-                    host, res,
-                    to_ms_since_boot (get_absolute_time ()) - now
-                    );
-            return false;
-        }
+    // netconn_gethostbyname is the thread-safe, blocking lookup for use
+    // from an application task. Calling dns_gethostbyname directly from
+    // here skipped lwIP's core lock, and waited the full timeout even when
+    // the lookup had already failed (seen as "DNS Timeout ... -6").
+    uint32_t now = to_ms_since_boot (get_absolute_time ());
+    err_t res = netconn_gethostbyname(xHostName, &xHost);
+    if (res != ERR_OK){
+        printf("DNS lookup failed for %s: err %d after %u ms\n",
+                xHostName, res,
+                to_ms_since_boot (get_absolute_time ()) - now
+                );
+        return false;
     }
 
     return transConnect();

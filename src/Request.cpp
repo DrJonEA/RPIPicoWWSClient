@@ -127,6 +127,8 @@ bool Request::doRequest(const char * method, const char * url, const char * payl
 	} else if (pUri->get_scheme().compare("https") == 0 ){
 		pTrans =&xTLSTrans;
 		xTLSTrans.setForceTLS12(xTLS12);
+		xTLSTrans.setRootCA(pRootCA);
+		xTLSTrans.setInsecure(xInsecure);
 		if (serverPort == 0){
 			serverPort = 443;
 		}
@@ -375,4 +377,20 @@ int Request::urlEncode(char *target, const char * source){
 
 void Request::setForceTLS12(bool state){
 	xTLS12 = state;
+}
+
+void Request::setRootCA(const char *pem){
+	pRootCA = pem;
+}
+
+void Request::setInsecure(bool state){
+	xInsecure = state;
+}
+
+const char * Request::getTLSVersion(){
+	return xTLSTrans.getTLSVersion();
+}
+
+const char * Request::getTLSCipher(){
+	return xTLSTrans.getTLSCipher();
 }

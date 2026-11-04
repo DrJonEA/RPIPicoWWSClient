@@ -218,6 +218,9 @@ void WifiHelper::setTimeSec(uint32_t sec, uint32_t us){
 
 	us_to_timespec(microsec, &ts);
 
+	int64_t t = (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+	printf("SNT TIME SET %"  PRId64 "\n", t);
+
 	if (aon_timer_is_running ()){
 		aon_timer_set_time (&ts);
 	} else {

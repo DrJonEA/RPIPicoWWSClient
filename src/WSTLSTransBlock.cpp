@@ -6,6 +6,7 @@
 #include <errno.h>
 
 #include <stdio.h>
+#include "lwip/api.h"
 
 WSTLSTransBlock::WSTLSTransBlock() {
     xHostDNSFound = xSemaphoreCreateBinary(  );
@@ -56,21 +57,22 @@ int32_t WSTLSTransBlock::transRead(void * pBuffer, size_t bytesToRecv){
 
 
 bool WSTLSTransBlock::transConnect(const char * host, uint16_t port){
-    err_t res = dns_gethostbyname(host, &xHost, WSTLSTransBlock::dnsCB, this);
-
-    strcpy(xHostName, host);
+    strncpy(xHostName, host, sizeof(xHostName) - 1);
+    xHostName[sizeof(xHostName) - 1] = 0;
     xPort = port;
 
-    if (res == ERR_OK){
-    } else {
-        uint32_t now = to_ms_since_boot (get_absolute_time ());
-        if (xSemaphoreTake(xHostDNSFound, TLS_TRANSPORT_WAIT) != pdTRUE){
-            printf("DNS Timeout on Connect: %s, %d After %u ms",
-                    host, res,
-                    to_ms_since_boot (get_absolute_time ()) - now
-                    );
-            return false;
-        }
+    // netconn_gethostbyname is the thread-safe, blocking lookup for use
+    // from an application task. Calling dns_gethostbyname directly from
+    // here skipped lwIP's core lock, and waited the full timeout even when
+    // the lookup had already failed (seen as "DNS Timeout ... -6").
+    uint32_t now = to_ms_since_boot (get_absolute_time ());
+    err_t res = netconn_gethostbyname(xHostName, &xHost);
+    if (res != ERR_OK){
+        printf("DNS lookup failed for %s: err %d after %u ms\n",
+                xHostName, res,
+                to_ms_since_boot (get_absolute_time ()) - now
+                );
+        return false;
     }
 
     return transConnect();
@@ -79,8 +81,15 @@ bool WSTLSTransBlock::transConnect(const char * host, uint16_t port){
 
 bool WSTLSTransBlock::transConnect(){
     struct sockaddr_in serv_addr;
-    int                ret, err;
+    int                ret = 0, err;
     char buffer[80];
+
+    //Secure by default: refuse unless we know who to trust,
+    //or have been told explicitly not to check
+    if ((pRootCA == NULL) && (!xInsecure)){
+        printf("TLS refused: no root CA set. Call setRootCA(), or setInsecure(true) for an unverified demo\n");
+        return false;
+    }
 
     xSock = socket(AF_INET, SOCK_STREAM, 0);
     if (xSock < 0){
@@ -114,7 +123,26 @@ bool WSTLSTransBlock::transConnect(){
 
     wolfSSL_SetIORecv(pCtx, WSTLSTransBlock::IORecv);
     wolfSSL_SetIOSend(pCtx, WSTLSTransBlock::IOSend);
-    wolfSSL_CTX_set_verify(pCtx, SSL_VERIFY_NONE, NULL);
+
+    xTLSVersion[0] = 0;
+    xTLSCipher[0] = 0;
+
+    if (pRootCA != NULL){
+        //Trust only the root CA we were given, and check the server's
+        //certificate chains up to it
+        ret = wolfSSL_CTX_load_verify_buffer(pCtx,
+                (const unsigned char *)pRootCA, strlen(pRootCA),
+                WOLFSSL_FILETYPE_PEM);
+        if (ret != WOLFSSL_SUCCESS){
+            LogError(("Failed to load root CA %d\n", ret));
+            return false;
+        }
+        wolfSSL_CTX_set_verify(pCtx, WOLFSSL_VERIFY_PEER, NULL);
+    } else {
+        //setInsecure(true): encrypted, but we have no idea who we are talking to
+        printf("WARNING: TLS without server verification\n");
+        wolfSSL_CTX_set_verify(pCtx, WOLFSSL_VERIFY_NONE, NULL);
+    }
 
     memset(&serv_addr,0,sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -139,6 +167,14 @@ bool WSTLSTransBlock::transConnect(){
         return false;
     }
 
+    if (pRootCA != NULL){
+        //The certificate must be for the host we asked for
+        if (wolfSSL_check_domain_name(pSSL, xHostName) != WOLFSSL_SUCCESS){
+            LogError(("Failed to set domain name check\n"));
+            return false;
+        }
+    }
+
     ret = wolfSSL_connect(pSSL);
     err = wolfSSL_get_error(pSSL, ret);
 
@@ -149,6 +185,9 @@ bool WSTLSTransBlock::transConnect(){
         printf("err = %d, %s\n", err, buffer);
         return false;
     }
+
+    strncpy(xTLSVersion, wolfSSL_get_version(pSSL), sizeof(xTLSVersion) - 1);
+    strncpy(xTLSCipher, wolfSSL_get_cipher_name(pSSL), sizeof(xTLSCipher) - 1);
 
     return true;
 }
@@ -161,10 +200,20 @@ int WSTLSTransBlock::status(){
 }
 
 bool WSTLSTransBlock::transClose(){
-    wolfSSL_free(pSSL);
-    wolfSSL_CTX_free(pCtx);
+    //Null the pointers so a failed connect can't free them twice
+    if (pSSL != NULL){
+        wolfSSL_free(pSSL);
+        pSSL = NULL;
+    }
+    if (pCtx != NULL){
+        wolfSSL_CTX_free(pCtx);
+        pCtx = NULL;
+    }
     wolfSSL_Cleanup();
-    closesocket(xSock);
+    if (xSock >= 0){
+        closesocket(xSock);
+        xSock = -1;
+    }
     return true;
 }
 
@@ -292,4 +341,20 @@ int WSTLSTransBlock::IORecv(WOLFSSL* ssl, char* buff, int sz, void* ctx){
 
 void WSTLSTransBlock::setForceTLS12(bool state){
     xTLS12 = state;
+}
+
+void WSTLSTransBlock::setRootCA(const char *pem){
+    pRootCA = pem;
+}
+
+void WSTLSTransBlock::setInsecure(bool state){
+    xInsecure = state;
+}
+
+const char * WSTLSTransBlock::getTLSVersion(){
+    return xTLSVersion;
+}
+
+const char * WSTLSTransBlock::getTLSCipher(){
+    return xTLSCipher;
 }
