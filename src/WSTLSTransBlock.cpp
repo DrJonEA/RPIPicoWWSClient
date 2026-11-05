@@ -84,13 +84,6 @@ bool WSTLSTransBlock::transConnect(){
     int                ret = 0, err;
     char buffer[80];
 
-    //Secure by default: refuse unless we know who to trust,
-    //or have been told explicitly not to check
-    if ((pRootCA == NULL) && (!xInsecure)){
-        printf("TLS refused: no root CA set. Call setRootCA(), or setInsecure(true) for an unverified demo\n");
-        return false;
-    }
-
     xSock = socket(AF_INET, SOCK_STREAM, 0);
     if (xSock < 0){
         LogError(("ERROR opening socket\n"));
@@ -127,7 +120,9 @@ bool WSTLSTransBlock::transConnect(){
     xTLSVersion[0] = 0;
     xTLSCipher[0] = 0;
 
-    if (pRootCA != NULL){
+    bool verify = (pRootCA != NULL) && (!xInsecure);
+
+    if (verify){
         //Trust only the root CA we were given, and check the server's
         //certificate chains up to it
         ret = wolfSSL_CTX_load_verify_buffer(pCtx,
@@ -139,7 +134,8 @@ bool WSTLSTransBlock::transConnect(){
         }
         wolfSSL_CTX_set_verify(pCtx, WOLFSSL_VERIFY_PEER, NULL);
     } else {
-        //setInsecure(true): encrypted, but we have no idea who we are talking to
+        //No root CA (or setInsecure(true)): encrypted,
+        //but we have no idea who we are talking to
         printf("WARNING: TLS without server verification\n");
         wolfSSL_CTX_set_verify(pCtx, WOLFSSL_VERIFY_NONE, NULL);
     }
@@ -167,7 +163,7 @@ bool WSTLSTransBlock::transConnect(){
         return false;
     }
 
-    if (pRootCA != NULL){
+    if (verify){
         //The certificate must be for the host we asked for
         if (wolfSSL_check_domain_name(pSSL, xHostName) != WOLFSSL_SUCCESS){
             LogError(("Failed to set domain name check\n"));

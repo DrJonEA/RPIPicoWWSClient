@@ -46,7 +46,7 @@ public:
     /***
      * Allow TLS without checking the server's certificate.
      * Encrypted, but the server could be anyone. For quick demos only.
-     * Without a root CA or this, connections are refused.
+     * Without a root CA, connections are unverified anyway.
      * @param state - true to allow unverified connections
      */
     void setInsecure(bool state);

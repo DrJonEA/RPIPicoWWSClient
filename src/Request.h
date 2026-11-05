@@ -145,7 +145,7 @@ public:
 	/***
 	 * Root CA certificate(s), PEM format, used to verify HTTPS servers.
 	 * The string must stay in memory while the Request is used.
-	 * HTTPS requests are refused until a root CA is set (or setInsecure(true)).
+	 * Without one, HTTPS still works but is unverified (with a warning).
 	 * @param pem - root CA certificate(s)
 	 */
 	void setRootCA(const char *pem);
