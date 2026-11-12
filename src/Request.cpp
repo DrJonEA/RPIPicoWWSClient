@@ -314,11 +314,17 @@ bool Request::postJSON(const char * url,  JSONSerialisable *json){
 	return res;
 }
 
-bool Request::postPayload(const char * url,  const char *payload){
+bool Request::postPayload(const char * url,  const char *payload, size_t len){
 	int length=0;
 	bool res;
 
-	length = strlen(payload);
+	if (payload != NULL){
+		if (len == 0){
+			length = strlen(payload);
+		} else {
+			length = len;
+		}
+	}
 
 	res = doRequest("POST", url, payload, length);
 	return res;

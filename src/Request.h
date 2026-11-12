@@ -93,7 +93,7 @@ public:
 	 * @param payload
 	 * @return true if successful
 	 */
-	bool postPayload(const char * url,  const char *payload);
+	bool postPayload(const char * url,  const char *payload = NULL, size_t len = 0);
 
 	/**
 	 * Get the HTTP result code
