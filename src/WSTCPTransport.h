@@ -95,7 +95,7 @@ private:
     void dnsFound(const char *name, const ip_addr_t *ipaddr, void *callback_arg);
 
     //Socket number
-    int xSock = 0;
+    int xSock = -1;
 
     // Port to connect to
     uint16_t xPort=80;

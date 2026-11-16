@@ -107,7 +107,13 @@ int WSTCPTransport::status(){
 }
 
 bool WSTCPTransport::transClose(){
-    closesocket(xSock);
+    // Only close a socket we opened, and only once. Socket numbers are
+    // reused, so closing a stale or default (0) number closes whichever
+    // other connection (e.g. MQTT) now holds it.
+    if (xSock >= 0){
+        closesocket(xSock);
+        xSock = -1;
+    }
     return true;
 }
 
